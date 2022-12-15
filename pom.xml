@@ -47,11 +47,6 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <relocations>
-                                <relocation>
-                                    <pattern>xyz.fragmentmc.fragmentcore</pattern>
-                                </relocation>
-                            </relocations>
                         </configuration>
                     </execution>
                 </executions>
@@ -88,8 +83,7 @@
             <groupId>xyz.fragmentmc</groupId>
             <artifactId>FragmentCoreAPI</artifactId>
             <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/../FragmentCoreAPI/target/FragmentCoreAPI-1.0.jar</systemPath>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>
