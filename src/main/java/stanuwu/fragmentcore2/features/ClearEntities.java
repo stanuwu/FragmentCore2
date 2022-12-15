@@ -4,10 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.FallingBlock;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.*;
 import stanuwu.fragmentcore2.FragmentCore2;
 import stanuwu.fragmentcore2.helpers.Helper;
 
@@ -23,7 +20,7 @@ public class ClearEntities implements CommandExecutor {
         int r = FragmentCore2.config.getInt("fragmentcore.cannoning.clearentity-range");
         int count = 0;
         for(Entity entity : player.getNearbyEntities(r, r, r)) {
-            if(entity instanceof TNTPrimed | entity instanceof FallingBlock)
+            if(entity instanceof TNTPrimed || entity instanceof FallingBlock ||entity instanceof Item)
                 count = count+1;
                 entity.remove();
         }
