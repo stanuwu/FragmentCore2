@@ -119,7 +119,7 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
         return result;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onDispense(BlockDispenseEvent event) {
         if (!event.isCancelled() && event.getBlock().getState() instanceof Nameable dispenser) {
             String name = dispenser.getCustomName();
