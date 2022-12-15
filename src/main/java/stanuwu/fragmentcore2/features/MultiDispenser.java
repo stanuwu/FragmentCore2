@@ -100,13 +100,13 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
 
     private boolean isValidMulti(@Nullable String name) {
         if (name == null) return false;
-        return name.replaceAll("/(?<!&)\\d{1,7}/gm", "0").equals(getDispenserName(0, 0));
+        return name.replaceAll("(?<!§)\\d{1,7}", "0").equals(getDispenserName(0, 0));
     }
 
     private int[] getMultiAmount(String name) {
         int[] result = new int[2];
         int idx = 0;
-        Matcher matcher = Pattern.compile("/(?<!&)\\d{1,7}/gm").matcher(name);
+        Matcher matcher = Pattern.compile("(?<!§)\\d{1,7}").matcher(name);
         while (matcher.find()) {
             try {
                 result[idx] = Integer.parseInt(name.substring(matcher.start(), matcher.end()));
@@ -121,7 +121,7 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDispense(BlockDispenseEvent event) {
-        if (!event.isCancelled() && event.getBlock() instanceof Nameable dispenser) {
+        if (!event.isCancelled() && event.getBlock().getState() instanceof Nameable dispenser) {
             String name = dispenser.getCustomName();
             if (isValidMulti(name)) {
                 int[] data = getMultiAmount(name);
@@ -176,6 +176,8 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
                 int fuse = enchants.getOrDefault(Enchantment.DURABILITY, 0);
                 if (event.getItemInHand().equals(getDispenser(amount, fuse))) {
                     event.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('&', Helper.WithPrefix(String.format("Placed MultiDispenser [Amount: %s, Fuse:%s]", amount, fuse))));
+                    if (event.getBlock().getState() instanceof Nameable dispenser)
+                        dispenser.setCustomName(getDispenserName(amount, fuse));
                 }
             }
         }
@@ -185,7 +187,7 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
     public void onBlockBreak(BlockBreakEvent event) {
         if (!event.isCancelled()) {
             if (event.getBlock().getType().equals(Material.DISPENSER)) {
-                if (event.getBlock() instanceof Nameable dispenser && isValidMulti(dispenser.getCustomName())) {
+                if (event.getBlock().getState() instanceof Nameable dispenser && isValidMulti(dispenser.getCustomName())) {
                     event.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('&', Helper.WithPrefix("Broke MultiDispenser")));
                 }
             }
