@@ -153,7 +153,7 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
                         FallingBlock fallingBlock = world.spawnFallingBlock(summonLoc, summonMat.createBlockData());
                         if (!hasEventSent) {
                             hasEventSent = true;
-                            MultiDispenserEvent newEvent = new MultiDispenserEvent(false, fallingBlock, amount, fuse);
+                            MultiDispenserEvent newEvent = new MultiDispenserEvent(false, event.getBlock(), fallingBlock, amount, fuse);
                             plugin.getServer().getPluginManager().callEvent(newEvent);
                             if (event.isCancelled()) {
                                 fallingBlock.remove();
