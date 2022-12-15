@@ -13,7 +13,8 @@ fragmentcore:
     stackremover-range: 100
     tickcounter-item: "blaze_rod"
     entitytracker-item: "iron_sword"
-    magicsand-block: "beacon"
+    magicsand-block: "netherite_block" # this can not be beacon, sandstone, red_sandstone, iron_block or andesite
+    magicsand-range: 32
   cosmetic:
     message-prefix: "&7[&a+&7]&f "
     discord-invite: "%prefix%example.url"

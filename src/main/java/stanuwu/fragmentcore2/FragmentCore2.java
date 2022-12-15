@@ -10,18 +10,19 @@ import stanuwu.fragmentcore2.features.*;
 
 public final class FragmentCore2 extends JavaPlugin {
     public static FileConfiguration config;
+    MagicSand magicSand;
 
     @Override
     public void onEnable() {
         //config
         Config.initConfig(this);
-        config=this.getConfig();
+        config = this.getConfig();
         getCommand("reload").setExecutor(new Config(this));
 
         //predefined
         Fire fire = new Fire(this);
         EntityTracker entityTracker = new EntityTracker(this);
-        MagicSand magicSand = new MagicSand(this);
+        magicSand = new MagicSand(this);
         MultiDispenser multiDispenser = new MultiDispenser(this);
 
         //register commands
@@ -54,5 +55,6 @@ public final class FragmentCore2 extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        magicSand.clearAllMs();
     }
 }

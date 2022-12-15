@@ -94,7 +94,11 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
             }
         }
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', Helper.WithPrefix("Received MultiDispenser")));
-        player.getInventory().addItem(getDispenser(amount, fuse));
+        if (player.getInventory().getItemInMainHand().getType().equals(Material.DISPENSER)) {
+            player.getInventory().setItemInMainHand(getDispenser(amount, fuse));
+        } else {
+            player.getInventory().addItem(getDispenser(amount, fuse));
+        }
         return true;
     }
 
