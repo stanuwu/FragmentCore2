@@ -13,7 +13,7 @@
 
     <description>Core Plugin for Cannoning Servers</description>
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -70,6 +70,14 @@
             <artifactId>spigot-api</artifactId>
             <version>1.19.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>xyz.fragmentmc</groupId>
+            <artifactId>FragmentCoreAPI</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../FragmentCoreAPI/target/FragmentCoreAPI-1.0.jar</systemPath>
         </dependency>
     </dependencies>
 </project>

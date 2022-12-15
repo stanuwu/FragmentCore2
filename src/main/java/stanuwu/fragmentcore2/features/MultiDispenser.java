@@ -8,6 +8,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
@@ -16,28 +17,30 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.material.MaterialData;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
 import stanuwu.fragmentcore2.FragmentCore2;
 import stanuwu.fragmentcore2.helpers.Helper;
+import xyz.fragmentmc.fragmentcore.api.events.MultiDispenserEvent;
 
+import javax.annotation.Nullable;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
     final private FragmentCore2 plugin;
-    final private HashMap<Location, List<Integer>> dispensers;
 
     public MultiDispenser(FragmentCore2 plugin) {
         this.plugin = plugin;
-        this.dispensers = new HashMap<>();
     }
 
-    ItemStack getDispenser(int amount, int fuse) {
+    private String getDispenserName(int amount, int fuse) {
+        return ChatColor.translateAlternateColorCodes('&', Helper.getConfigString("cosmetic", "multidispenser-name").replace("%amount%", Integer.toString(amount)).replace("%fuse%", Integer.toString(fuse)));
+    }
+
+    private ItemStack getDispenser(int amount, int fuse) {
         ItemStack item = new ItemStack(Material.DISPENSER, 1);
         item.addUnsafeEnchantment(Enchantment.ARROW_INFINITE, 1530);
         item.addUnsafeEnchantment(Enchantment.PROTECTION_EXPLOSIONS, amount);
@@ -45,13 +48,13 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
         ItemMeta meta = item.getItemMeta();
         assert meta != null;
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', Helper.getConfigString("cosmetic", "multidispenser-name").replaceAll("%amount%", Integer.toString(amount)).replaceAll("%fuse%", Integer.toString(fuse))));
+        meta.setDisplayName(getDispenserName(amount, fuse));
         item.setItemMeta(meta);
         return item;
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String label , String[] args) {
+    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         List<String> l = new ArrayList<>();
         if (args.length == 1) {
             l = new LinkedList<>(Arrays.asList("10", "50", "100", "500", "1000", "5000", "10000", "50000", "100000"));
@@ -73,7 +76,7 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
         if (args.length < 2) {
             fuse = 80;
         } else {
-            fuse =  Integer.parseInt(args[1]);
+            fuse = Integer.parseInt(args[1]);
             if (fuse < 0) {
                 fuse = 0;
             }
@@ -95,27 +98,68 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
         return true;
     }
 
+    private boolean isValidMulti(@Nullable String name) {
+        if (name == null) return false;
+        return name.replaceAll("/(?<!&)\\d{1,7}/gm", "0").equals(getDispenserName(0, 0));
+    }
+
+    private int[] getMultiAmount(String name) {
+        int[] result = new int[2];
+        int idx = 0;
+        Matcher matcher = Pattern.compile("/(?<!&)\\d{1,7}/gm").matcher(name);
+        while (matcher.find()) {
+            try {
+                result[idx] = Integer.parseInt(name.substring(matcher.start(), matcher.end()));
+            } catch (NumberFormatException e) {
+                // ignore exception
+            }
+            idx++;
+            if (idx > 1) break;
+        }
+        return result;
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDispense(BlockDispenseEvent event) {
-        if (!event.isCancelled()) {
-            Location dispenserLoc = event.getBlock().getLocation();
-            if (dispensers.containsKey(dispenserLoc)) {
+        if (!event.isCancelled() && event.getBlock() instanceof Nameable dispenser) {
+            String name = dispenser.getCustomName();
+            if (isValidMulti(name)) {
+                int[] data = getMultiAmount(name);
+                if (data[0] == 0 || data[1] == 0) return;
                 World world = event.getBlock().getWorld();
-                List<Integer> data = dispensers.get(dispenserLoc);
-                int amount = data.get(0);
-                int fuse = data.get(1);
-                Location summonLoc = event.getBlock().getRelative(((Directional)event.getBlock().getBlockData()).getFacing()).getLocation().add(0.5, 0, 0.5);
+                int amount = data[0];
+                int fuse = data[1];
+                Location summonLoc = event.getBlock().getRelative(((Directional) event.getBlock().getBlockData()).getFacing()).getLocation().add(0.5, 0, 0.5);
                 Material summonMat = event.getItem().getType();
                 if (summonMat.equals(Material.TNT)) {
+                    boolean hasEventSent = false;
                     for (int i = 0; i < amount; i++) {
-                        TNTPrimed tnt = (TNTPrimed)world.spawnEntity(summonLoc, EntityType.PRIMED_TNT);
+                        TNTPrimed tnt = (TNTPrimed) world.spawnEntity(summonLoc, EntityType.PRIMED_TNT);
+                        if (!hasEventSent) {
+                            hasEventSent = true;
+                            MultiDispenserEvent newEvent = new MultiDispenserEvent(false, event.getBlock(), tnt, amount, fuse);
+                            plugin.getServer().getPluginManager().callEvent(newEvent);
+                            if (event.isCancelled()) {
+                                tnt.remove();
+                                return;
+                            }
+                        }
                         tnt.setFuseTicks(fuse);
-                        tnt.setVelocity(new Vector(0, 0, 0));
                     }
                     event.setCancelled(true);
                 } else if (Helper.fallingBlocks.contains(summonMat)) {
+                    boolean hasEventSent = false;
                     for (int i = 0; i < amount; i++) {
-                        world.spawnFallingBlock(summonLoc, summonMat.createBlockData());
+                        FallingBlock fallingBlock = world.spawnFallingBlock(summonLoc, summonMat.createBlockData());
+                        if (!hasEventSent) {
+                            hasEventSent = true;
+                            MultiDispenserEvent newEvent = new MultiDispenserEvent(false, fallingBlock, amount, fuse);
+                            plugin.getServer().getPluginManager().callEvent(newEvent);
+                            if (event.isCancelled()) {
+                                fallingBlock.remove();
+                                return;
+                            }
+                        }
                     }
                     event.setCancelled(true);
                 }
@@ -131,19 +175,7 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
                 int amount = enchants.getOrDefault(Enchantment.PROTECTION_EXPLOSIONS, 0);
                 int fuse = enchants.getOrDefault(Enchantment.DURABILITY, 0);
                 if (event.getItemInHand().equals(getDispenser(amount, fuse))) {
-                    Player player = event.getPlayer();
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', Helper.WithPrefix(String.format("Placed MultiDispenser [Amount: %s, Fuse:%s]", amount, fuse))));
-                    dispensers.put(event.getBlock().getLocation(), Arrays.asList(amount, fuse));
-                    new BukkitRunnable() {
-                        final Location loc = event.getBlock().getLocation();
-                        @Override
-                        public void run() {
-                            if(!loc.getBlock().getType().equals(Material.DISPENSER)) {
-                                dispensers.remove(loc);
-                                this.cancel();
-                            }
-                        }
-                    }.runTaskTimerAsynchronously(this.plugin, 200, 200);
+                    event.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('&', Helper.WithPrefix(String.format("Placed MultiDispenser [Amount: %s, Fuse:%s]", amount, fuse))));
                 }
             }
         }
@@ -153,22 +185,10 @@ public class MultiDispenser implements CommandExecutor, Listener, TabCompleter {
     public void onBlockBreak(BlockBreakEvent event) {
         if (!event.isCancelled()) {
             if (event.getBlock().getType().equals(Material.DISPENSER)) {
-                if (dispensers.containsKey(event.getBlock().getLocation())) {
-                    dispensers.remove(event.getBlock().getLocation());
+                if (event.getBlock() instanceof Nameable dispenser && isValidMulti(dispenser.getCustomName())) {
                     event.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('&', Helper.WithPrefix("Broke MultiDispenser")));
                 }
             }
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onEntityExplode(EntityExplodeEvent event) {
-        if(!event.isCancelled()) {
-            event.blockList().forEach(b -> {
-                if(b.getType().equals(Material.DISPENSER)) {
-                    dispensers.remove(b.getLocation());
-                }
-            });
         }
     }
 }
