@@ -20,9 +20,10 @@ public class ClearEntities implements CommandExecutor {
         int r = FragmentCore2.config.getInt("fragmentcore.cannoning.clearentity-range");
         int count = 0;
         for(Entity entity : player.getNearbyEntities(r, r, r)) {
-            if(entity instanceof TNTPrimed || entity instanceof FallingBlock ||entity instanceof Item)
-                count = count+1;
+            if(entity instanceof TNTPrimed || entity instanceof FallingBlock || entity instanceof Item) {
+                count = count + 1;
                 entity.remove();
+            }
         }
         if(count<1){
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', Helper.WithPrefix("No Entities Found")));
