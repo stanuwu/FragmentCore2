@@ -18,21 +18,29 @@ public class ClearEntities implements CommandExecutor {
         Player player = (Player) sender;
 
         int r = FragmentCore2.config.getInt("fragmentcore.cannoning.clearentity-range");
-        int count = 0;
+        int tnt = 0;
+        int falling = 0;
+        int item = 0;
         for(Entity entity : player.getNearbyEntities(r, r, r)) {
-            if(entity instanceof TNTPrimed || entity instanceof FallingBlock || entity instanceof Item) {
-                count = count + 1;
+            if(entity instanceof TNTPrimed) {
+                tnt ++;
+                entity.remove();
+            }
+            else if (entity instanceof FallingBlock) {
+                falling ++;
+                entity.remove();
+            } else if(entity instanceof Item) {
+                item++;
                 entity.remove();
             }
         }
-        if(count<1){
+        if(tnt+falling+item<1){
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', Helper.WithPrefix("No Entities Found")));
         }else{
-            if(count==1){
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&',Helper.WithPrefix(count+" Entity Cleared")));
-            }else{
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&',Helper.WithPrefix(count+" Entities Cleared")));
-            }
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&',Helper.WithPrefix("Entities Cleared!")));
+            if (tnt > 0) player.sendMessage(ChatColor.translateAlternateColorCodes('&',Helper.WithPrefix("TNT: " + tnt)));
+            if (falling > 0) player.sendMessage(ChatColor.translateAlternateColorCodes('&',Helper.WithPrefix("Falling Block: " + falling)));
+            if (item > 0) player.sendMessage(ChatColor.translateAlternateColorCodes('&',Helper.WithPrefix("Item: " + item)));
         }
         return true;
     }
